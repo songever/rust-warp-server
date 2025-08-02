@@ -1,5 +1,5 @@
-use sqlx::postgres::{PgPool, PgPoolOptions, PgRow};
 use sqlx::Row;
+use sqlx::postgres::{PgPool, PgPoolOptions, PgRow};
 
 use crate::types::account::AccountId;
 use crate::types::{

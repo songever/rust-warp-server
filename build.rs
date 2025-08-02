@@ -14,15 +14,13 @@ pub fn generate_cargo_keys() {
             Cow::from(sha)
         }
         Ok(o) => {
-            println!("cargo:warning=Git command failed with status: {}",
-            o.status
-        );
+            println!("cargo:warning=Git command failed with status: {}", o.status);
             Cow::from("unknown")
-        },
+        }
         Err(err) => {
             println!("cargo:warning=Failed to execute git command: {}", err);
             Cow::from("unknown")
-        },
+        }
     };
 
     println!(
@@ -32,7 +30,7 @@ pub fn generate_cargo_keys() {
 }
 
 fn get_platform() -> String {
-    let env_dash = if TARGET_ENV.is_some() {"-"} else {""};
+    let env_dash = if TARGET_ENV.is_some() { "-" } else { "" };
 
     format!(
         "{}-{}{}{}",
@@ -44,7 +42,7 @@ fn get_platform() -> String {
 }
 
 fn get_version(impl_commit: &str) -> String {
-    let commit_dash = if impl_commit.is_empty() {""} else {"-"};
+    let commit_dash = if impl_commit.is_empty() { "" } else { "-" };
 
     format!(
         "{}{}{}-{}",

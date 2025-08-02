@@ -1,4 +1,4 @@
-curl --location --request POST 'http://localhost:3030/login' \
+curl --location --request POST 'http://localhost:8080/login' \
     --header 'Content-Type: application/json' \
     --data-raw '{
     "email": "test@email.com",

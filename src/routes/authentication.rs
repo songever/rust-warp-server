@@ -1,9 +1,9 @@
 use argon2::{self, Config};
 use chrono::Utc;
 use rand::Rng;
+use std::env;
 use warp::Filter;
 use warp::http::StatusCode;
-use std::env;
 
 use crate::store::Store;
 use crate::types::account::{Account, AccountId, Session};
@@ -88,4 +88,25 @@ pub fn auth() -> impl Filter<Extract = (Session,), Error = warp::Rejection> + Cl
             Err(_) => Err(warp::reject::custom(handle_errors::Error::Unauthorized)),
         }
     })
+}
+
+#[cfg(test)]
+mod authentication_tests {
+    use super::{auth, env, issue_token, AccountId};
+
+    #[tokio::test]
+    async fn post_questions_auth() {
+        unsafe {
+            env::set_var("PASETO_KEY", "RANDOM WORDS WINTER MACINTOSH PC");
+        } 
+
+        let token = issue_token(AccountId(1));
+
+        let filter = auth();
+
+        let res = warp::test::request()
+            .header("Authorization", token)
+            .filter(&filter);
+            assert_eq!(res.await.unwrap().account_id, AccountId(3));
+    }
 }
