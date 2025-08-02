@@ -1,4 +1,4 @@
-curl --location --request POST 'localhost:3030/questions' \
+curl --location --request POST 'localhost:8080/questions' \
     --header 'Content-Type: application/x-www-form-urlencoded' \
     --data-urlencode 'id=1' \
     --data-urlencode 'title=First question' \

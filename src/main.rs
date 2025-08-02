@@ -1,34 +1,44 @@
 #![warn(clippy::all)]
 
+use clap::Parser;
 use dotenv;
-use std::env;
 use handle_errors::return_error;
+use std::env;
 use tracing_subscriber::fmt::format::FmtSpan;
 use warp::{Filter, http::Method};
-use clap::Parser;
+
+
 
 mod profanity;
 mod routes;
 mod store;
 mod types;
+mod config;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
     #[clap(short, long, default_value = "warn")]
     log_level: String,
+    ///Which PORT the server is listening to
+    #[clap(short, long, default_value = "8080")]
+    port: u16,
+    ///Database user
+    #[clap(long, default_value = "root")]
+    db_user: String,
     #[clap(long, default_value = "root:Mei20031003@localhost")]
-    database_host: String,
+    db_host: String,
     #[clap(long, default_value = "5432")]
-    database_port: u16,
+    db_port: u16,
     #[clap(long, default_value = "rustwebdev")]
-    database_name: String,
+    db_name: String,
 }
 
 #[tokio::main]
-async fn main() -> Result<(), handle_errors::Error>{
+async fn main() -> Result<(), handle_errors::Error> {
     dotenv::dotenv().ok();
 
+    let config = config::Config::new().expect("Config can't be set");
     if let Err(_) = env::var("BAD_WORDS_API_KEY") {
         panic!("Badwords API key not set");
     }
@@ -37,7 +47,6 @@ async fn main() -> Result<(), handle_errors::Error>{
         panic!("PASETO key not set");
     }
 
-    
     let args = Args::parse();
 
     let port = std::env::var("PORT")
@@ -46,20 +55,35 @@ async fn main() -> Result<(), handle_errors::Error>{
         .unwrap_or(Ok(3030))
         .map_err(|e| handle_errors::Error::ParseError(e));
 
-    let log_filter = std::env::var("RUST_LOG")
-        .unwrap_or_else(|_| {format!("handle_errors={},rust_web_dev={},warp={}",
-        args.log_level, args.log_level, args.log_level)}
-    );
+    let db_host = std::env::var("POSTGRES_HOST")
+        .unwrap_or(args.db_host.to_owned());
+    let db_password = std::env::var("POSTGRES_PASSWORD").unwrap();
+    let db_user = std::env::var("POSTGRES_USER")
+        .unwrap_or(args.db_user.to_owned());
+    let db_port = std::env::var("POSTGRES_PORT")
+        .unwrap_or(args.db_port.to_string());
+    let db_name = std::env::var("POSTGRES_DB")
+        .unwrap_or(args.db_name.to_owned());
+
+    let log_filter = std::env::var("RUST_LOG").unwrap_or_else(|_| {
+        format!(
+            "handle_errors={},rust_web_dev={},warp={}",
+            args.log_level, args.log_level, args.log_level
+        )
+    });
 
     let store = store::Store::new(&format!(
-        "postgres://{}:{}/{}",
-        args.database_host, args.database_port, args.database_name))
+        "postgres://{}:{}@{}:{}/{}",
+        db_user, db_password,
+        db_host, db_port, db_name
+    ))
     .await
     .map_err(|e| handle_errors::Error::DatabaseQueryError(e))?;
 
     sqlx::migrate!("./migrations")
         .run(&store.clone().connection)
-        .await.map_err(|e| handle_errors::Error::MigrationError(e))?;
+        .await
+        .map_err(|e| handle_errors::Error::MigrationError(e))?;
 
     let store_filter = warp::any().map(move || store.clone());
 
@@ -69,6 +93,7 @@ async fn main() -> Result<(), handle_errors::Error>{
         // Record an event when each span closes. This can be used to time our
         // routes' durations!
         .with_span_events(FmtSpan::CLOSE)
+        .with_level(true)
         .init();
 
     let cors = warp::cors()
@@ -143,7 +168,9 @@ async fn main() -> Result<(), handle_errors::Error>{
 
     tracing::info!("Q&A service build ID {}", env!("RUST_WEB_DEV_VERSION"));
 
-    warp::serve(routes).run(([127, 0, 0, 1], port.unwrap())).await;
+    warp::serve(routes)
+        .run(([0, 0, 0, 0], port.unwrap()))
+        .await;
 
     Ok(())
 }
