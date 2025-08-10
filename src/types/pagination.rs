@@ -50,7 +50,7 @@ pub fn extract_pagination(params: HashMap<String, String>) -> Result<Pagination,
 mod pagination_tests {
     use openssl::pkey::Params;
 
-    use super::{HashMap, Pagination, extract_pagination, Error};
+    use super::{Error, HashMap, Pagination, extract_pagination};
 
     #[test]
     fn valid_pagination() {
@@ -62,17 +62,14 @@ mod pagination_tests {
             limit: Some(1),
             offset: 1,
         };
-    assert_eq!(pagination_result.limit, expected.limit);
+        assert_eq!(pagination_result.limit, expected.limit);
     }
 
     fn missing_offset_parameter() {
         let mut params = HashMap::new();
         params.insert(String::from("limit"), String::from("1"));
 
-        let pagination_result = format!(
-            "{}",
-            extract_pagination(params).unwrap_err()
-        );
+        let pagination_result = format!("{}", extract_pagination(params).unwrap_err());
 
         let expected = format!("{}", Error::MissingParameters);
 

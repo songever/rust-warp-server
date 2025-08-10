@@ -71,7 +71,7 @@ mod config_tests {
     fn set_env() {
         unsafe {
             env::set_var("BAD_WORDS_API_KEY", "yes");
-            env::set_var("PASETO_KEY", "yes");
+            env::set_var("PASETO_KEY", "RANDOM WORDS WINTER MACINTOSH PC");
             env::set_var("POSTGRES_USER", "user");
             env::set_var("POSTGRES_PASSWORD", "pass");
             env::set_var("POSTGRES_HOST", "localhost");

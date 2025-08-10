@@ -1,8 +1,8 @@
 use reqwest_middleware::ClientBuilder;
 use reqwest_retry::{RetryTransientMiddleware, policies::ExponentialBackoff};
 use serde::{Deserialize, Serialize};
-use tracing::instrument;
 use std::env;
+use tracing::instrument;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct APIResponse {
@@ -39,10 +39,7 @@ pub async fn check_profanity(content: String) -> Result<String, handle_errors::E
         .build();
 
     let res = client
-        .post(format!(
-            "{}/bad_words?censor_character=*",
-            api_layer_url
-        ))
+        .post(format!("{}/bad_words?censor_character=*", api_layer_url))
         .header("apikey", api_key)
         .body(content)
         .send()
@@ -56,14 +53,13 @@ pub async fn check_profanity(content: String) -> Result<String, handle_errors::E
         } else {
             let err = transform_error(res).await;
             return Err(handle_errors::Error::ServerError(err));
-        } 
+        }
     }
-    
-    match res.json::<BadWordsResponse>()
-        .await {
-            Ok(res) => Ok(res.censored_content),
-            Err(e) => Err(handle_errors::Error::ReqwestAPIError(e)),
-        }  
+
+    match res.json::<BadWordsResponse>().await {
+        Ok(res) => Ok(res.censored_content),
+        Err(e) => Err(handle_errors::Error::ReqwestAPIError(e)),
+    }
 }
 
 async fn transform_error(res: reqwest::Response) -> handle_errors::APILayerError {
